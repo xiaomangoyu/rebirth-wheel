@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff6df">
+<meta name="description" content="摇出生地、摇家底，抽出三段人生。保存一张自己的重生结果卡。">
+<meta name="game-url" content="/* PUBLIC_GAME_URL */">
+<meta property="og:title" content="重生之我是XX人">
+<meta property="og:description" content="摇出生地、摇家底，看你这辈子能有多离谱。">
+<meta property="og:type" content="website">
+<title>重生之我是XX人</title>
+<style>
+/* COMIC_STYLES */
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand"><i aria-hidden="true">投</i> 地球投胎办</div>
+    <button class="secondary" id="share-game" type="button">分享游戏</button>
+  </header>
+  <main>
+    <h1>重生之我是<span>XX</span>人</h1>
+    <p class="intro">先摇出生地，再摇家底。开局随机，人生照发。</p>
+    <div class="game">
+      <div class="stage">
+        <figure class="map-box">
+          <figcaption class="map-head">全球投胎现场 <span id="map-status" aria-hidden="true"></span></figcaption>
+          <canvas id="world-map" width="950" height="412" aria-hidden="true"></canvas>
+        </figure>
+        <div class="wheel-frame" aria-hidden="true">
+          <canvas id="wheel" width="820" height="820"></canvas>
+          <span class="hub">✦</span>
+          <span class="pointer"></span>
+        </div>
+      </div>
+      <section class="controls" aria-labelledby="round-title">
+        <ol class="steps">
+          <li id="step-country"><i aria-hidden="true">1</i> 出生国家</li>
+          <li id="step-class"><i aria-hidden="true">2</i> 家庭阶层</li>
+        </ol>
+        <div>
+          <h2 id="round-title"></h2>
+          <p id="hint"></p>
+        </div>
+        <div class="result" role="status" aria-atomic="true">
+          <span class="eyebrow" id="result-label"></span>
+          <strong id="result-title"></strong>
+          <small id="result-detail"></small>
+          <dl class="story" id="result-story" hidden>
+            <div><dt>出生</dt><dd></dd></div>
+            <div><dt>巅峰</dt><dd></dd></div>
+            <div><dt>结局</dt><dd></dd></div>
+          </dl>
+        </div>
+        <div class="actions">
+          <button class="primary" id="save-result" type="button" hidden>保存结果卡片</button>
+          <button class="primary" id="play" type="button"></button>
+        </div>
+        <p id="card-status" class="status-note" role="status" hidden></p>
+      </section>
+    </div>
+    <details>
+      <summary>查看抽奖概率</summary>
+      <p>第一轮按 2024 年年中人口加权，共 <span id="country-count"></span> 个国家和地区，每项有自己的扇格。小扇格在盘面上略放宽，实际概率见下表。<a href="https://population.un.org/wpp/" target="_blank" rel="noopener">联合国《世界人口展望》</a></p>
+      <p>第二轮用统一的游戏设定，独立抽取家庭经济阶层。低收入 30%、工薪 35%、中产 23%、富裕 10%、高净值 2%。</p>
+      <p>城市和剧情是游戏设定。示意地图和城市资料来自 <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> 和 <a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a>。</p>
+      <p>旗帜图片来自 <a href="https://hampusborgos.github.io/country-flags/" target="_blank" rel="noopener">Country Flags</a>。</p>
+      <div class="odds">
+        <label for="country-search">搜索国家或地区</label>
+        <input id="country-search" type="search" placeholder="输入名称或两位代码" autocomplete="off">
+        <p id="odds-empty" role="status" hidden>没有找到匹配的国家或地区。</p>
+        <div class="odds-scroll" tabindex="0" aria-label="各国家和地区的抽中概率">
+          <table>
+            <thead><tr><th scope="col">国家或地区</th><th scope="col">抽中概率</th></tr></thead>
+            <tbody id="odds-list"></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  </main>
+</div>
+<dialog id="share-dialog" aria-labelledby="share-title">
+  <form method="dialog">
+    <h2 id="share-title">分享游戏</h2>
+    <p id="share-note">复制网址，发给朋友就能打开游戏。</p>
+    <label for="share-url">游戏网址</label>
+    <input id="share-url" type="url" readonly inputmode="url">
+    <div class="dialog-actions">
+      <button type="button" id="copy" class="secondary">复制网址</button>
+      <button class="secondary" value="close">关闭</button>
+    </div>
+    <p id="copy-status" role="status" hidden></p>
+  </form>
+</dialog>
+<dialog id="card-dialog" class="card-dialog" aria-labelledby="card-modal-title">
+  <form method="dialog">
+    <div class="card-toolbar">
+      <h2 id="card-modal-title">重生结果卡</h2>
+      <button class="close-card" value="close" aria-label="关闭结果卡">×</button>
+    </div>
+    <div class="card-preview">
+      <img id="card-image" width="1080" height="1440" alt="你的竖版重生结果卡">
+    </div>
+    <a id="card-download" class="primary download-card" download>保存 PNG</a>
+    <p class="card-note">手机也可以长按图片存到相册。</p>
+  </form>
+</dialog>
+<script>
+'use strict';
+const populationSnapshot = /* POPULATION_SNAPSHOT */ [];
+const mapData = /* MAP_DATA */ [];
+const cityData = /* CITY_DATA */ {};
+const flagPositions = /* FLAG_POSITIONS */ {};
+const publicGameUrl = document.querySelector('meta[name="game-url"]').content;
+const regionNames = new Intl.DisplayNames(['zh-CN'], { type:'region' });
+const countries = populationSnapshot.map(([id, weight, city]) => ({
+  id, weight, city, name:regionNames.of(id), label:regionNames.of(id)
+}));
+const classes = [
+  { id:'low', name:'低收入家庭', label:'低收入', weight:30 },
+  { id:'working', name:'工薪家庭', label:'工薪', weight:35 },
+  { id:'middle', name:'中产家庭', label:'中产', weight:23 },
+  { id:'wealthy', name:'富裕家庭', label:'富裕', weight:10 },
+  { id:'high', name:'高净值家庭', label:'高净值', weight:2 }
+];
+/* LIFE_STORIES */
+const sumWeights = items => items.reduce((sum, item) => sum + item.weight, 0);
+const totalPopulation = sumWeights(countries);
+const colors = ['#ffda58','#bba7f7','#94dfc1','#ff9f91','#f5b5e2','#9ed0ff','#ffe7a4','#c9b5fb','#c2e6a5'];
+const smallSectorColors = ['#ddd2f4','#cfc2ee','#dbddf7','#c4ccee'];
+const tau = Math.PI * 2;
+const byId = id => document.getElementById(id);
+const wheel = byId('wheel');
+const context = wheel.getContext('2d');
+const play = byId('play');
+const roundTitle = byId('round-title');
+const hint = byId('hint');
+const dialog = byId('share-dialog');
+const shareUrl = byId('share-url');
+const copyStatus = byId('copy-status');
+const percent = new Intl.NumberFormat('zh-CN', { style:'percent', maximumSignificantDigits:3 });
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let country = null;
+let family = null;
+let state = 'country';
+let rotation = 0;
+let storySeed = 0;
+
+/* RESULT_POSTER */
+
+function setFlaggedText(element, text, code) {
+  element.replaceChildren();
+  const codes = code === 'JG' ? ['GG', 'JE'] : [code];
+  for (const id of codes) {
+    const index = flagPositions[id];
+    if (index === undefined) continue;
+    const icon = document.createElement('span');
+    icon.className = 'flag';
+    icon.dataset.flag = id;
+    icon.style.setProperty('--flag-column', index % 16);
+    icon.style.setProperty('--flag-row', Math.floor(index / 16));
+    icon.setAttribute('aria-hidden', 'true');
+    element.append(icon);
+  }
+  element.append(text);
+}
+
+/* MAP_RENDERER */
+
+function layOutWheel(items, minimumShare = 0) {
+  const total = sumWeights(items);
+  const available = 1 - minimumShare * items.length;
+  let start = 0;
+  return items.map(item => {
+    const end = start + (minimumShare + item.weight / total * available) * tau;
+    const sector = { item, start, end, middle: (start + end) / 2 };
+    start = end;
+    return sector;
+  });
+}
+
+const countrySectors = layOutWheel(countries, .0015);
+const classSectors = layOutWheel(classes);
+
+function paintWheel(sectors) {
+  const radius = wheel.width / 2;
+  const surface = document.createElement('canvas');
+  surface.width = surface.height = wheel.width;
+  const context = surface.getContext('2d');
+  context.translate(radius, radius);
+  context.rotate(-Math.PI / 2);
+  sectors.forEach(({ item, start, end, middle }, index) => {
+    const angle = end - start;
+    context.beginPath();
+    context.moveTo(0,0);
+    context.arc(0,0,radius,start,end);
+    context.closePath();
+    context.fillStyle = angle < .048
+      ? smallSectorColors[index % smallSectorColors.length]
+      : colors[index % colors.length];
+    context.fill();
+    if (angle >= .048) {
+      context.strokeStyle = '#33254c';
+      context.lineWidth = 1;
+      context.stroke();
+    }
+    if (angle < .105) return;
+    context.save();
+    context.rotate(middle);
+    context.translate(radius * (angle < .18 ? .85 : .71), 0);
+    context.rotate(Math.cos(middle - Math.PI / 2) < 0 ? Math.PI : 0);
+    context.fillStyle = '#211630';
+    context.font = '900 ' + (angle < .18 ? 28 : 37) + 'px "Microsoft YaHei", "PingFang SC", sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(item.label, 0, 0, radius * (angle < .18 ? .28 : .5));
+    context.restore();
+  });
+  return surface;
+}
+
+const countryWheel = paintWheel(countrySectors);
+const classWheel = paintWheel(classSectors);
+
+function drawWheel(surface) {
+  const radius = wheel.width / 2;
+  context.clearRect(0, 0, wheel.width, wheel.height);
+  context.save();
+  context.translate(radius, radius);
+  context.rotate(rotation);
+  context.drawImage(surface, -radius, -radius);
+  context.restore();
+}
+
+function drawPick(sectors, total) {
+  const ticket = Math.random() * total;
+  let cumulative = 0;
+  return sectors.find(({ item }) => {
+    cumulative += item.weight;
+    return ticket < cumulative;
+  });
+}
+
+function spin(surface, angle, previewMap = false) {
+  const start = rotation;
+  const distance = 5 * tau + ((-angle - start) % tau + tau) % tau;
+  const duration = reducedMotion.matches ? 0 : 2650;
+  return new Promise(resolve => {
+    let started;
+    let nextPreview = 0;
+    let preview;
+    function frame(time) {
+      started ??= time;
+      const progress = duration ? Math.min(1, (time - started) / duration) : 1;
+      rotation = start + distance * (1 - (1 - progress) ** 4);
+      drawWheel(surface);
+      if (previewMap && progress < 1 && time >= nextPreview) {
+        const underPointer = (-rotation % tau + tau) % tau;
+        const candidate = (countrySectors.find(sector => underPointer < sector.end) ?? countrySectors.at(-1)).item;
+        if (candidate !== preview) showMap(candidate, 'rolling');
+        preview = candidate;
+        nextPreview = time + 105;
+      }
+      if (progress < 1) requestAnimationFrame(frame);
+      else {
+        rotation %= tau;
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function showResult(label, title, description, beats = []) {
+  byId('result-label').textContent = label;
+  setFlaggedText(byId('result-title'), title, country?.id);
+  byId('result-detail').textContent = description;
+  const story = byId('result-story');
+  story.querySelectorAll('dd').forEach((line, index) => {
+    line.textContent = beats[index] ?? '';
+  });
+  story.hidden = !beats.length;
+}
+
+function markStep(id, active, done) {
+  const step = byId(id);
+  step.classList.toggle('done', done);
+  step.querySelector('i').textContent = done ? '✓' : id === 'step-country' ? '1' : '2';
+  if (active) step.setAttribute('aria-current','step');
+  else step.removeAttribute('aria-current');
+}
+
+function countryProbability() {
+  return percent.format(country.weight / totalPopulation);
+}
+
+function combinationProbability() {
+  return percent.format(country.weight / totalPopulation * family.weight / 100);
+}
+
+function showCountryRound() {
+  state = 'country';
+  country = family = null;
+  rotation = 0;
+  markStep('step-country', true, false);
+  markStep('step-class', false, false);
+  roundTitle.textContent = '地球开始摇号';
+  hint.textContent = '照全球人口抽签，人多的地方更容易摇到。';
+  showResult('出生登记', '出生地待填', '地球在转，就差你按一下。');
+  play.textContent = '摇个出生地';
+  saveResult.hidden = true;
+  posterCache = '';
+  cardStatus.hidden = true;
+  drawWheel(countryWheel);
+  showMap();
+}
+
+function showClassRound() {
+  state = 'family';
+  rotation = 0;
+  markStep('step-country', false, true);
+  markStep('step-class', true, false);
+  roundTitle.textContent = '看看家里有几套房';
+  hint.textContent = '从低收入到高净值，五档家底独立抽取。';
+  showResult('出生地已盖章', country.name, '出生地概率 ' + countryProbability());
+  play.textContent = '摇摇家底';
+  drawWheel(classWheel);
+}
+
+function showCompleted(shared = false) {
+  state = 'complete';
+  if (shared) {
+    rotation = -classSectors.find(sector => sector.item === family).middle;
+    drawWheel(classWheel);
+    showMap(country, 'locked');
+  }
+  markStep('step-country', false, true);
+  markStep('step-class', false, true);
+  roundTitle.textContent = shared ? '同事的人生剧本' : '你的人生剧本到了';
+  hint.textContent = '虚构小传，三段看完这辈子。';
+  const story = lifeStory(country, family, storySeed);
+  showResult(
+    '重生档案',
+    country.name + ' · ' + story.city,
+    family.name + ' · 出生地 ' + countryProbability()
+      + ' · 阶层 ' + family.weight + '% · 组合 ' + combinationProbability(),
+    story.beats
+  );
+  play.textContent = shared ? '我也来摇' : '再投一次';
+  saveResult.hidden = false;
+}
+
+play.addEventListener('click', async () => {
+  if (state === 'complete') {
+    history.replaceState(null, '', location.href.split('#')[0]);
+    showCountryRound();
+    return;
+  }
+  if (state === 'country-result') {
+    showClassRound();
+    return;
+  }
+  play.disabled = true;
+  play.textContent = '摇号中…';
+  if (state === 'country') {
+    const pick = drawPick(countrySectors, totalPopulation);
+    await spin(countryWheel, pick.middle, true);
+    country = pick.item;
+    showMap(country, 'locked');
+    state = 'country-result';
+    markStep('step-country', false, true);
+    showResult('出生地已盖章', country.name, '出生地概率 ' + countryProbability());
+    play.textContent = '继续抽家底';
+  } else {
+    const pick = drawPick(classSectors, sumWeights(classes));
+    await spin(classWheel, pick.middle);
+    family = pick.item;
+    storySeed = Math.floor(Math.random() * 4294967296);
+    showCompleted();
+    if (matchMedia('(max-width: 740px)').matches) {
+      byId('result-title').closest('.controls').scrollIntoView({
+        block:'start', behavior:reducedMotion.matches ? 'instant' : 'smooth'
+      });
+    }
+  }
+  play.disabled = false;
+  play.focus({ preventScroll:true });
+});
+
+function shareableGameUrl({ publicOnly = false } = {}) {
+  const current = new URL(location.href);
+  current.hash = '';
+  current.search = '';
+  if (current.hostname.endsWith('.github.io')) return current.href;
+  if (publicGameUrl) return publicGameUrl;
+  if (publicOnly || !['http:', 'https:'].includes(current.protocol)) return '';
+  return current.href;
+}
+
+byId('share-game').addEventListener('click', () => {
+  shareUrl.value = shareableGameUrl();
+  const available = Boolean(shareUrl.value);
+  byId('copy').disabled = !available;
+  byId('share-note').textContent = available
+    ? '复制网址，发给朋友就能打开游戏。'
+    : '从网页地址打开游戏后即可复制网址。';
+  copyStatus.hidden = true;
+  dialog.showModal();
+});
+byId('copy').addEventListener('click', async () => {
+  let copied = false;
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(shareUrl.value);
+      copied = true;
+    } catch {}
+  }
+  if (!copied) {
+    shareUrl.focus();
+    shareUrl.select();
+    try { copied = document.execCommand('copy'); } catch {}
+  }
+  copyStatus.textContent = copied ? '链接已复制。' : '链接已选中，请手动复制。';
+  copyStatus.hidden = false;
+});
+
+byId('country-count').textContent = countries.length;
+const searchInput = byId('country-search');
+const oddsList = byId('odds-list');
+const oddsEntries = countries.map(item => {
+  const row = document.createElement('tr');
+  const name = row.insertCell();
+  setFlaggedText(name, item.name + ' · ' + item.id, item.id);
+  row.insertCell().textContent = percent.format(item.weight / totalPopulation);
+  return { row, searchText:(item.name + ' ' + item.id).toLowerCase() };
+});
+oddsList.append(...oddsEntries.map(entry => entry.row));
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.trim().toLowerCase();
+  let found = false;
+  for (const entry of oddsEntries) {
+    entry.row.hidden = !entry.searchText.includes(query);
+    if (!entry.row.hidden) found = true;
+  }
+  byId('odds-empty').hidden = found;
+  oddsList.closest('.odds-scroll').scrollTop = 0;
+});
+const shared = new URLSearchParams(location.hash.slice(1));
+const sharedCountry = shared.get('country');
+country = countries.find(item => item.id === sharedCountry);
+// Older links used one entry for Jersey and Guernsey.
+if (sharedCountry === 'JG') {
+  const islands = countries.filter(item => item.id === 'JE' || item.id === 'GG');
+  country = { id:'JG', name:'海峡群岛', city:'海峡群岛', weight:sumWeights(islands) };
+}
+family = classes.find(item => item.id === shared.get('family'));
+if (country && family) {
+  const savedSeed = shared.get('story');
+  storySeed = /^\d{1,10}$/.test(savedSeed) && Number(savedSeed) < 4294967296
+    ? Number(savedSeed)
+    : Math.imul(country.id.charCodeAt(0) * 31 + country.id.charCodeAt(1) + family.weight, 2654435761) >>> 0;
+  showCompleted(true);
+} else {
+  showCountryRound();
+}
+</script>
+</body>
+</html>
+
