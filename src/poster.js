@@ -84,8 +84,8 @@ function renderResultPoster(place, household, story, combo, publicUrl) {
   posterBox(context, 90, 188, 895, 322, 26, accent);
   const titleX = drawPosterFlags(context, place.id, 130, 235);
   posterText(context, place.name, titleX + 1, 283, 64, 950, ink, 948 - titleX);
-  posterText(context, story.city, 131, 385, 76, 950, ink, 805);
-  posterText(context, household.name + '  ·  组合概率 ' + combo, 132, 459, 34, 850, ink, 805);
+  posterText(context, household.label + '阶层', 131, 385, 75, 950, ink, 805);
+  posterText(context, story.city + '  ·  组合概率 ' + combo, 132, 459, 34, 850, ink, 805);
 
   const headings = ['出生', '巅峰', '结局'];
   const colors = ['#d9cbff', '#ff9f91', '#b9e9d5'];
@@ -110,7 +110,7 @@ function renderResultPoster(place, household, story, combo, publicUrl) {
   context.strokeStyle = '#8f7d9e';
   context.stroke();
   context.setLineDash([]);
-  posterText(context, '重生之我是XX人', 100, 1260, 36, 900);
+  posterText(context, rebirthTitle(place), 100, 1260, 36, 900, ink, 770);
   posterText(context, publicUrl ? publicUrl.replace(/^https:\/\//, '') : '幸运转盘 · 虚构人生', 101, 1314, 27, 700, muted, 765);
   context.textAlign = 'right';
   posterText(context, '已盖章', 975, 1264, 30, 900, '#a13c3c');
@@ -138,7 +138,7 @@ function clearPosterCache() {
 
 saveResult.addEventListener('click', async () => {
   saveResult.disabled = true;
-  play.disabled = true;
+  playAgain.disabled = true;
   try {
     if (!posterCache) {
       if (!posterFlagSheet.complete) await posterFlagSheet.decode().catch(() => {});
@@ -156,6 +156,6 @@ saveResult.addEventListener('click', async () => {
     cardStatus.hidden = false;
   } finally {
     saveResult.disabled = false;
-    play.disabled = false;
+    playAgain.disabled = false;
   }
 });

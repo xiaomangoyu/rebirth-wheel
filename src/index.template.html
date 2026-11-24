@@ -21,9 +21,9 @@
     <button class="secondary" id="share-game" type="button">分享游戏</button>
   </header>
   <main>
-    <h1>重生之我是<span>XX</span>人</h1>
-    <p class="intro">先摇出生地，再摇家底。开局随机，人生照发。</p>
-    <div class="game">
+    <h1 id="game-title">重生之我是<span id="title-country">XX</span>人</h1>
+    <p class="intro" id="game-intro">先摇出生地，再摇家底。开局随机，人生照发。</p>
+    <div class="game" id="game">
       <div class="stage">
         <figure class="map-box">
           <figcaption class="map-head">全球投胎现场 <span id="map-status" aria-hidden="true"></span></figcaption>
@@ -48,19 +48,33 @@
           <span class="eyebrow" id="result-label"></span>
           <strong id="result-title"></strong>
           <small id="result-detail"></small>
-          <dl class="story" id="result-story" hidden>
-            <div><dt>出生</dt><dd></dd></div>
-            <div><dt>巅峰</dt><dd></dd></div>
-            <div><dt>结局</dt><dd></dd></div>
-          </dl>
         </div>
-        <div class="actions">
-          <button class="primary" id="save-result" type="button" hidden>保存结果卡片</button>
-          <button class="primary" id="play" type="button"></button>
-        </div>
-        <p id="card-status" class="status-note" role="status" hidden></p>
+        <button class="primary" id="play" type="button"></button>
       </section>
     </div>
+    <section id="result-screen" class="report" aria-labelledby="report-title" hidden>
+      <div class="report-identity">
+        <p class="report-label">重生档案</p>
+        <h2 id="report-title" tabindex="-1">我出生在<strong id="report-country"></strong>，家里是<strong id="report-class"></strong>。</h2>
+        <p class="report-joke" id="report-joke"></p>
+        <dl class="report-data">
+          <div><dt>出生城市</dt><dd id="report-city"></dd></div>
+          <div><dt>出生地概率</dt><dd id="report-country-odds"></dd></div>
+          <div><dt>阶层概率</dt><dd id="report-class-odds"></dd></div>
+          <div><dt>组合概率</dt><dd id="report-combo"></dd></div>
+        </dl>
+      </div>
+      <dl class="story" id="result-story" aria-label="虚构人生">
+        <div><dt>出生</dt><dd></dd></div>
+        <div><dt>巅峰</dt><dd></dd></div>
+        <div><dt>结局</dt><dd></dd></div>
+      </dl>
+      <div class="report-actions">
+        <button class="primary" id="save-result" type="button">保存结果卡片</button>
+        <button class="secondary" id="play-again" type="button">再投一次</button>
+      </div>
+      <p id="card-status" class="status-note" role="status" hidden></p>
+    </section>
     <details>
       <summary>查看抽奖概率</summary>
       <p>第一轮按 2024 年年中人口加权，共 <span id="country-count"></span> 个国家和地区，每项有自己的扇格。小扇格在盘面上略放宽，实际概率见下表。<a href="https://population.un.org/wpp/" target="_blank" rel="noopener">联合国《世界人口展望》</a></p>
@@ -119,11 +133,11 @@ const countries = populationSnapshot.map(([id, weight, city]) => ({
   id, weight, city, name:regionNames.of(id), label:regionNames.of(id)
 }));
 const classes = [
-  { id:'low', name:'低收入家庭', label:'低收入', weight:30 },
-  { id:'working', name:'工薪家庭', label:'工薪', weight:35 },
-  { id:'middle', name:'中产家庭', label:'中产', weight:23 },
-  { id:'wealthy', name:'富裕家庭', label:'富裕', weight:10 },
-  { id:'high', name:'高净值家庭', label:'高净值', weight:2 }
+  { id:'low', label:'低收入', weight:30, joke:'出生证明是免费的，你认真看了两遍，确实就这一张免费。' },
+  { id:'working', label:'工薪', weight:35, joke:'你还在学数数，月底已经开始倒计时了。' },
+  { id:'middle', label:'中产', weight:23, joke:'地球投胎办送你一把钥匙，银行把剩下三十年的账单发来了。' },
+  { id:'wealthy', label:'富裕', weight:10, joke:'你说想试试白手起家，家里说行，先挑间办公室。' },
+  { id:'high', label:'高净值', weight:2, joke:'你还没学会翻身，家里的资产已经替你翻了一倍。' }
 ];
 /* LIFE_STORIES */
 const sumWeights = items => items.reduce((sum, item) => sum + item.weight, 0);
@@ -135,6 +149,9 @@ const byId = id => document.getElementById(id);
 const wheel = byId('wheel');
 const context = wheel.getContext('2d');
 const play = byId('play');
+const playAgain = byId('play-again');
+const gameSection = byId('game');
+const resultScreen = byId('result-screen');
 const roundTitle = byId('round-title');
 const hint = byId('hint');
 const dialog = byId('share-dialog');
@@ -274,15 +291,10 @@ function spin(surface, angle, previewMap = false) {
   });
 }
 
-function showResult(label, title, description, beats = []) {
+function showSpinResult(label, title, description) {
   byId('result-label').textContent = label;
   setFlaggedText(byId('result-title'), title, country?.id);
   byId('result-detail').textContent = description;
-  const story = byId('result-story');
-  story.querySelectorAll('dd').forEach((line, index) => {
-    line.textContent = beats[index] ?? '';
-  });
-  story.hidden = !beats.length;
 }
 
 function markStep(id, active, done) {
@@ -301,17 +313,31 @@ function combinationProbability() {
   return percent.format(country.weight / totalPopulation * family.weight / 100);
 }
 
+function rebirthTitle(place) {
+  return '重生之我是' + (place?.name ?? 'XX') + '人';
+}
+
+function updateTitle(place) {
+  const titleCountry = byId('title-country');
+  titleCountry.textContent = place?.name ?? 'XX';
+  byId('game-title').classList.toggle('long-title', titleCountry.textContent.length > 7);
+  document.title = rebirthTitle(place);
+}
+
 function showCountryRound() {
   state = 'country';
   country = family = null;
   rotation = 0;
+  updateTitle();
+  gameSection.hidden = false;
+  resultScreen.hidden = true;
+  byId('game-intro').hidden = false;
   markStep('step-country', true, false);
   markStep('step-class', false, false);
   roundTitle.textContent = '地球开始摇号';
   hint.textContent = '照全球人口抽签，人多的地方更容易摇到。';
-  showResult('出生登记', '出生地待填', '地球在转，就差你按一下。');
+  showSpinResult('出生登记', '出生地待填', '地球在转，就差你按一下。');
   play.textContent = '摇个出生地';
-  saveResult.hidden = true;
   clearPosterCache();
   cardStatus.hidden = true;
   drawWheel(countryWheel);
@@ -325,40 +351,44 @@ function showClassRound() {
   markStep('step-class', true, false);
   roundTitle.textContent = '看看家里有几套房';
   hint.textContent = '从低收入到高净值，五档家底独立抽取。';
-  showResult('出生地已盖章', country.name, '出生地概率 ' + countryProbability());
+  showSpinResult('出生地已盖章', country.name, '出生地概率 ' + countryProbability());
   play.textContent = '摇摇家底';
   drawWheel(classWheel);
 }
 
 function showCompleted(shared = false) {
   state = 'complete';
-  if (shared) {
-    rotation = -classSectors.find(sector => sector.item === family).middle;
-    drawWheel(classWheel);
-    showMap(country, 'locked');
-  }
-  markStep('step-country', false, true);
-  markStep('step-class', false, true);
-  roundTitle.textContent = shared ? '同事的人生剧本' : '你的人生剧本到了';
-  hint.textContent = '虚构小传，三段看完这辈子。';
+  updateTitle(country);
   const story = lifeStory(country, family, storySeed);
-  showResult(
-    '重生档案',
-    country.name + ' · ' + story.city,
-    family.name + ' · 出生地 ' + countryProbability()
-      + ' · 阶层 ' + family.weight + '% · 组合 ' + combinationProbability(),
-    story.beats
-  );
-  play.textContent = shared ? '我也来摇' : '再投一次';
-  saveResult.hidden = false;
+  setFlaggedText(byId('report-country'), country.name, country.id);
+  byId('report-class').textContent = family.label + '阶层';
+  byId('report-joke').textContent = family.joke;
+  byId('report-city').textContent = story.city;
+  byId('report-country-odds').textContent = countryProbability();
+  byId('report-class-odds').textContent = family.weight + '%';
+  byId('report-combo').textContent = combinationProbability();
+  byId('result-story').querySelectorAll('dd').forEach((line, index) => {
+    line.textContent = story.beats[index];
+  });
+  resultScreen.dataset.household = family.id;
+  playAgain.textContent = shared ? '我也来摇' : '再投一次';
+  gameSection.hidden = true;
+  byId('game-intro').hidden = true;
+  resultScreen.hidden = false;
+  if (!shared) {
+    window.scrollTo(0, 0);
+    byId('report-title').focus({ preventScroll:true });
+  }
 }
 
+playAgain.addEventListener('click', () => {
+  history.replaceState(null, '', location.href.split('#')[0]);
+  showCountryRound();
+  window.scrollTo(0, 0);
+  play.focus({ preventScroll:true });
+});
+
 play.addEventListener('click', async () => {
-  if (state === 'complete') {
-    history.replaceState(null, '', location.href.split('#')[0]);
-    showCountryRound();
-    return;
-  }
   if (state === 'country-result') {
     showClassRound();
     return;
@@ -369,10 +399,11 @@ play.addEventListener('click', async () => {
     const pick = drawPick(countrySectors, totalPopulation);
     await spin(countryWheel, pick.middle, true);
     country = pick.item;
+    updateTitle(country);
     showMap(country, 'locked');
     state = 'country-result';
     markStep('step-country', false, true);
-    showResult('出生地已盖章', country.name, '出生地概率 ' + countryProbability());
+    showSpinResult('出生地已盖章', country.name, '出生地概率 ' + countryProbability());
     play.textContent = '继续抽家底';
   } else {
     const pick = drawPick(classSectors, sumWeights(classes));
@@ -380,14 +411,9 @@ play.addEventListener('click', async () => {
     family = pick.item;
     storySeed = Math.floor(Math.random() * 4294967296);
     showCompleted();
-    if (matchMedia('(max-width: 740px), (max-width: 900px) and (orientation: portrait)').matches) {
-      byId('result-title').closest('.controls').scrollIntoView({
-        block:'start', behavior:reducedMotion.matches ? 'instant' : 'smooth'
-      });
-    }
   }
   play.disabled = false;
-  play.focus({ preventScroll:true });
+  if (state !== 'complete') play.focus({ preventScroll:true });
 });
 
 function shareableGameUrl({ publicOnly = false } = {}) {
