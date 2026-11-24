@@ -10,3 +10,4 @@ Vercel 使用 `vercel.json` 构建，GitHub Pages 发布 `main` 分支的 `/docs
 - 地图来自 [Natural Earth](https://www.naturalearthdata.com/)，城市来自 [GeoNames](https://www.geonames.org/)。
 - 旗帜来自 [Country Flags](https://hampusborgos.github.io/country-flags/)。
 - 故事中的地方风物参考 [UNESCO 非物质文化遗产名录](https://ich.unesco.org/en/lists)及[广州市文化广电旅游局的广府早茶资料](https://wglj.gz.gov.cn/ztmb/gzhyn/whgz/content/post_8832957.html)。角色、家庭、职业和经历均为虚构。
+- 丹麦剧本中的场景参考 [哥本哈根自行车蛇桥](https://www.visitcopenhagen.com/copenhagen/planning/the-bicycle-snake-gdk1087414)、[港湾浴场](https://www.visitcopenhagen.com/copenhagen/planning/islands-brygge-harbour-bath-gdk482346)及[丹麦旅游局的日德兰与菲英资料](https://www.visitdenmark.com/travel-trade/various/family-holidays/family-wonders-west-denmark)。

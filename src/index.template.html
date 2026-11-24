@@ -144,6 +144,8 @@ const classes = [
 ];
 /* LOCAL_STORY_ATLAS */
 /* CITY_STORY_DETAILS */
+/* REGIONAL_STORY_ROUTES */
+/* DANISH_STORY_ROUTES */
 /* LIFE_STORIES */
 const sumWeights = items => items.reduce((sum, item) => sum + item.weight, 0);
 const totalPopulation = sumWeights(countries);
@@ -373,7 +375,7 @@ function showCompleted(shared = false) {
   const story = lifeStory(country, family, storySeed);
   setFlaggedText(byId('report-country'), country.name, country.id);
   byId('report-class').textContent = family.label + '阶层';
-  byId('report-joke').textContent = family.joke;
+  byId('report-joke').textContent = story.line ?? family.joke;
   byId('report-city').textContent = story.city;
   byId('report-country-odds').textContent = countryProbability();
   byId('report-class-odds').textContent = family.weight + '%';

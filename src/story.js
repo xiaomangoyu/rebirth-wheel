@@ -95,70 +95,15 @@ function storyCity(place, tier, seed) {
   return city.startsWith('城墙') ? place.name + city : city;
 }
 
-function regionalBeats(tier, variant, gift, venue, destination) {
-  const outcomes = [
-    [
-      [
-        '你出生那天，邻居送来' + gift + '。婴儿床是借的，来吃喜的人倒一个没少。',
-        '你在' + venue + '顶了三年工，最挣钱那天，是老板把找零的盒子带回了家。',
-        '终于舍得去' + destination + '歇一下午，接到老板电话，还下意识问几点到。'
-      ],
-      [
-        '亲戚带来' + gift + '庆祝你出生。家里凑了半天，才找到一个能借你睡的篮子。',
-        '你在' + venue + '帮人卸货，唯一一次提前下班，是因为送货车把路堵死了。',
-        '你去' + destination + '拍了张纪念照。换衣服的地方没找到，工作服也就一并留念了。'
-      ]
-    ],
-    [
-      [
-        '爸妈下班赶来接你出院，手里拎着' + gift + '。你家从这天开始实行接力带娃。',
-        '你在' + venue + '从帮人顶班升到负责排班。终于弄明白，原来自己的班最难找人换。',
-        '换工作后，你能在天黑前走到' + destination + '。手机响了三次，你没接。'
-      ],
-      [
-        '你刚出生，街坊送来' + gift + '。晚班的那位没赶上拍照，家里把他剪进了相框。',
-        '在' + venue + '带完第一个新人，老板奖励你一块新工牌，工资条却没重新做。',
-        '第一次带全家去' + destination + '过周末。有人催你回去补班，你说今天排的就是这个。'
-      ]
-    ],
-    [
-      [
-        '你出生时，亲戚带来' + gift + '。你爸刚拍完照片，就开表格算起了学费。',
-        '你在' + venue + '附近做生意攒出首付，回家一看，新房合同比开店合同还厚。',
-        '周末到' + destination + '散步，钱包没带，工作也没带。直到银行发来扣款提醒。'
-      ],
-      [
-        '满月聚餐端上' + gift + '。长辈举杯的时候，你爸悄悄把一笔饭钱记到了教育支出。',
-        '你在' + venue + '附近做成第一单大生意。收到钱那晚，结婚、装修和买车同时提上了日程。',
-        '一家人在' + destination + '度过了难得的休假，合照取名「已报销」，其实谁也没给你报。'
-      ]
-    ],
-    [
-      [
-        '你还没出院，家里就拿' + gift + '招待客人。来过一圈，顺便帮你定了以后在哪儿开店。',
-        '你在' + venue + '找铺面创业。刚说怕库存放不下，家里已经多买了两间。',
-        '你在' + destination + '等采访，看到提纲上写「从零开始」，决定先把房租这一题跳过。'
-      ],
-      [
-        '亲戚带着' + gift + '来贺喜。你爸给婴儿照选相框，顺便好奇这间摄影棚的租金。',
-        '在' + venue + '开的店终于回本。财务核算了半天，发现利润主要来自楼面涨价。',
-        '你到' + destination + '庆祝，认真写下创业心得。第一条是要有耐心，第二条是问家里能不能续租。'
-      ]
-    ],
-    [
-      [
-        '你出生那天，亲戚带来' + gift + '，家族办公室带来一叠文件，护士请两边都排队。',
-        '你去' + venue + '随便逛逛，助理认真记下你多看的那一眼，回去开始拟收购方案。',
-        '你到' + destination + '拍《我的普通一天》。你说从简，统筹把接送队伍减成了三辆车。'
-      ],
-      [
-        '满月宴端上' + gift + '当压轴，宾客还没吃完，家里已给你发了第一份资产月报。',
-        '你在' + venue + '附近宣布要白手起家。记者一问第一笔投资从哪来，全家举了手。',
-        '你退休后爱去' + destination + '散步。助理对此最大的贡献，是终于学会不安排剪彩。'
-      ]
-    ]
-  ];
-  return outcomes[tier][variant];
+function mixStorySeed(seed, salt) {
+  let value = (seed ^ salt) >>> 0;
+  value = Math.imul(value ^ (value >>> 16), 0x21f0aaad);
+  value = Math.imul(value ^ (value >>> 15), 0x735a2d97);
+  return (value ^ (value >>> 15)) >>> 0;
+}
+
+function storyChoice(items, seed, salt) {
+  return items[storyIndex(mixStorySeed(seed, salt), items.length)];
 }
 
 function lifeStory(place, household, seed) {
@@ -167,7 +112,29 @@ function lifeStory(place, household, seed) {
   const authored = place.id === 'CN' ? chinaCityStories[city] : undefined;
   if (authored) return { city, beats:authored };
 
-  const [gift, venue, destination] = cityDetails[place.id + '/' + city] ?? localAtlas[place.id];
-  const variant = (seed >>> 30) & 1;
-  return { city, beats:regionalBeats(tier, variant, gift, venue, destination) };
+  const [localGift, venue, destination] = cityDetails[place.id + '/' + city] ?? localAtlas[place.id];
+  let placeSalt = 0;
+  for (const char of place.id + '/' + city) {
+    placeSalt = (Math.imul(placeSalt, 31) + char.codePointAt(0)) | 0;
+  }
+  const episodeSeed = mixStorySeed(seed, placeSalt ^ Math.imul(tier + 1, 0x9e3779b1));
+  const denmark = place.id === 'DK';
+  const gift = denmark ? storyChoice(danishGifts, episodeSeed, 0x6ab91f35) : localGift;
+  const routes = denmark ? danishRoutes[tier] : regionalRoutes[tier];
+  const [peak, endings] = storyChoice(routes, episodeSeed, 0x8daf53c7);
+  const birth = storyChoice(regionalBirths[tier], episodeSeed, 0x26a931e1);
+  const ending = storyChoice(endings, episodeSeed, 0x4ca12a55);
+  const fields = { gift, venue, destination };
+  const fill = text => text.replace(/\{(gift|venue|destination)\}/g, (_, key) => fields[key]);
+  const line = storyChoice([
+    '档案从' + city + '开始。接下来的事，连本人都猜不到。',
+    '从' + city + '出发，计划写了一页，意外写了三页。',
+    '出生地确认了。至于这一辈子怎么过，请当事人继续往下看。'
+  ], episodeSeed, 0xa5d7c3ea);
+
+  return {
+    city,
+    line,
+    beats:['你刚在' + place.name + '出生，' + fill(birth), fill(peak), fill(ending)]
+  };
 }

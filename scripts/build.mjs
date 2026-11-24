@@ -11,6 +11,8 @@ const sections = [
   ['/* PUBLIC_GAME_URL */', 'public-game-url.txt'],
   ['/* LOCAL_STORY_ATLAS */', 'local-atlas.js'],
   ['/* CITY_STORY_DETAILS */', 'city-lore.js'],
+  ['/* REGIONAL_STORY_ROUTES */', 'story-routes.js'],
+  ['/* DANISH_STORY_ROUTES */', 'danish-routes.js'],
   ['/* LIFE_STORIES */', 'story.js'],
   ['/* MAP_RENDERER */', 'map.js'],
   ['/* RESULT_POSTER */', 'poster.js']
