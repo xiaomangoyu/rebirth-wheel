@@ -9,3 +9,4 @@ Vercel 使用 `vercel.json` 构建，GitHub Pages 发布 `main` 分支的 `/docs
 - 人口来自[联合国世界人口展望](https://population.un.org/wpp/)，采用 2024 年年中人口。
 - 地图来自 [Natural Earth](https://www.naturalearthdata.com/)，城市来自 [GeoNames](https://www.geonames.org/)。
 - 旗帜来自 [Country Flags](https://hampusborgos.github.io/country-flags/)。
+- 故事中的地方风物参考 [UNESCO 非物质文化遗产名录](https://ich.unesco.org/en/lists)及[广州市文化广电旅游局的广府早茶资料](https://wglj.gz.gov.cn/ztmb/gzhyn/whgz/content/post_8832957.html)。角色、家庭、职业和经历均为虚构。
