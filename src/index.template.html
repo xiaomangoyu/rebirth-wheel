@@ -380,7 +380,7 @@ play.addEventListener('click', async () => {
     family = pick.item;
     storySeed = Math.floor(Math.random() * 4294967296);
     showCompleted();
-    if (matchMedia('(max-width: 740px)').matches) {
+    if (matchMedia('(max-width: 740px), (max-width: 900px) and (orientation: portrait)').matches) {
       byId('result-title').closest('.controls').scrollIntoView({
         block:'start', behavior:reducedMotion.matches ? 'instant' : 'smooth'
       });

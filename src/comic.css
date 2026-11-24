@@ -113,7 +113,7 @@ dialog p { color:var(--muted); line-height:1.5; }
 .card-preview img { display:block; width:auto; height:auto; max-width:100%; max-height:72dvh; }
 .download-card { display:grid; place-items:center; text-align:center; text-decoration:none; }
 .card-dialog .card-note { margin:8px 0 0; font-size:.875rem; text-align:center; }
-@media(max-width:740px) {
+@media(max-width:740px), (max-width:900px) and (orientation:portrait) {
   .shell { width:calc(100% - 24px); }
   header { padding:11px 0; }
   main { padding-top:20px; }
@@ -123,6 +123,9 @@ dialog p { color:var(--muted); line-height:1.5; }
   .stage { padding:8px 8px 13px; gap:17px; }
   .wheel-frame { width:min(89%, 385px); padding:6px; }
   .controls { gap:11px; scroll-margin-top:12px; }
+}
+@media(min-width:600px) and (max-width:900px) and (orientation:portrait) {
+  .wheel-frame { width:min(72%, 480px); }
 }
 @media(min-width:1100px) and (min-height:680px) {
   .controls { position:sticky; top:1.25rem; }
