@@ -311,7 +311,7 @@ function showCountryRound() {
   showResult('出生登记', '出生地待填', '地球在转，就差你按一下。');
   play.textContent = '摇个出生地';
   saveResult.hidden = true;
-  posterCache = '';
+  clearPosterCache();
   cardStatus.hidden = true;
   drawWheel(countryWheel);
   showMap();
@@ -393,7 +393,9 @@ function shareableGameUrl({ publicOnly = false } = {}) {
   const current = new URL(location.href);
   current.hash = '';
   current.search = '';
-  if (current.hostname.endsWith('.github.io')) return current.href;
+  if (current.hostname.endsWith('.github.io') || current.hostname === 'earth-rebirth-wheel.vercel.app') {
+    return current.href;
+  }
   if (publicGameUrl) return publicGameUrl;
   if (publicOnly || !['http:', 'https:'].includes(current.protocol)) return '';
   return current.href;

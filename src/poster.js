@@ -114,7 +114,12 @@ function renderResultPoster(place, household, story, combo, publicUrl) {
   posterText(context, publicUrl ? publicUrl.replace(/^https:\/\//, '') : '幸运转盘 · 虚构人生', 101, 1314, 27, 700, muted, 765);
   context.textAlign = 'right';
   posterText(context, '已盖章', 975, 1264, 30, 900, '#a13c3c');
-  return poster.toDataURL('image/png');
+  return new Promise((resolve, reject) => {
+    poster.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error('PNG export failed'));
+    }, 'image/png');
+  });
 }
 
 const cardDialog = byId('card-dialog');
@@ -124,11 +129,22 @@ const cardStatus = byId('card-status');
 const saveResult = byId('save-result');
 let posterCache = '';
 
-saveResult.addEventListener('click', () => {
+function clearPosterCache() {
+  if (posterCache) URL.revokeObjectURL(posterCache);
+  posterCache = '';
+  cardImage.removeAttribute('src');
+  cardDownload.removeAttribute('href');
+}
+
+saveResult.addEventListener('click', async () => {
+  saveResult.disabled = true;
+  play.disabled = true;
   try {
     if (!posterCache) {
+      if (!posterFlagSheet.complete) await posterFlagSheet.decode().catch(() => {});
       const story = lifeStory(country, family, storySeed);
-      posterCache = renderResultPoster(country, family, story, combinationProbability(), shareableGameUrl({ publicOnly:true }));
+      const png = await renderResultPoster(country, family, story, combinationProbability(), shareableGameUrl({ publicOnly:true }));
+      posterCache = URL.createObjectURL(png);
     }
     cardImage.src = posterCache;
     cardDownload.href = posterCache;
@@ -138,5 +154,8 @@ saveResult.addEventListener('click', () => {
   } catch {
     cardStatus.textContent = '图片生成失败，可以截图保存当前结果。';
     cardStatus.hidden = false;
+  } finally {
+    saveResult.disabled = false;
+    play.disabled = false;
   }
 });
