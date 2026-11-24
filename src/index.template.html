@@ -27,10 +27,10 @@
       <div class="stage">
         <figure class="map-box">
           <figcaption class="map-head">全球投胎现场 <span id="map-status" aria-hidden="true"></span></figcaption>
-          <canvas id="world-map" width="950" height="412" aria-hidden="true"></canvas>
+          <canvas id="world-map" width="1520" height="659" aria-hidden="true"></canvas>
         </figure>
         <div class="wheel-frame" aria-hidden="true">
-          <canvas id="wheel" width="820" height="820"></canvas>
+          <canvas id="wheel" width="1230" height="1230"></canvas>
           <span class="hub">✦</span>
           <span class="pointer"></span>
         </div>
@@ -186,6 +186,7 @@ const classSectors = layOutWheel(classes);
 
 function paintWheel(sectors) {
   const radius = wheel.width / 2;
+  const scale = radius / 410;
   const surface = document.createElement('canvas');
   surface.width = surface.height = wheel.width;
   const context = surface.getContext('2d');
@@ -203,7 +204,7 @@ function paintWheel(sectors) {
     context.fill();
     if (angle >= .048) {
       context.strokeStyle = '#33254c';
-      context.lineWidth = 1;
+      context.lineWidth = scale;
       context.stroke();
     }
     if (angle < .105) return;
@@ -212,7 +213,7 @@ function paintWheel(sectors) {
     context.translate(radius * (angle < .18 ? .85 : .71), 0);
     context.rotate(Math.cos(middle - Math.PI / 2) < 0 ? Math.PI : 0);
     context.fillStyle = '#211630';
-    context.font = '900 ' + (angle < .18 ? 28 : 37) + 'px "Microsoft YaHei", "PingFang SC", sans-serif';
+    context.font = '900 ' + (angle < .18 ? 28 : 37) * scale + 'px "Microsoft YaHei", "PingFang SC", sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(item.label, 0, 0, radius * (angle < .18 ? .28 : .5));

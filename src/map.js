@@ -6,7 +6,8 @@ mapBase.width = mapCanvas.width;
 mapBase.height = mapCanvas.height;
 const baseContext = mapBase.getContext('2d');
 const [worldShapes, worldMarkers] = mapData;
-const mapInset = 14;
+const mapScale = mapCanvas.width / 950;
+const mapInset = 14 * mapScale;
 
 function mapX(lon) {
   return mapInset + (lon + 180) / 360 * (mapCanvas.width - mapInset * 2);
@@ -43,13 +44,13 @@ for (let longitude = -150; longitude <= 150; longitude += 30) {
   baseContext.lineTo(mapX(longitude), mapBase.height - mapInset);
 }
 baseContext.strokeStyle = '#9390bf85';
-baseContext.lineWidth = 1;
-baseContext.setLineDash([3, 5]);
+baseContext.lineWidth = mapScale;
+baseContext.setLineDash([3 * mapScale, 5 * mapScale]);
 baseContext.stroke();
 baseContext.setLineDash([]);
 baseContext.fillStyle = '#fff9e5';
 baseContext.strokeStyle = '#776b91';
-baseContext.lineWidth = .95;
+baseContext.lineWidth = .95 * mapScale;
 for (const path of countryPaths.values()) {
   baseContext.fill(path, 'evenodd');
   baseContext.stroke(path);
@@ -71,21 +72,21 @@ function showMap(place = null, phase = 'ready') {
       mapContext.fillStyle = color;
       mapContext.fill(path, 'evenodd');
       mapContext.strokeStyle = '#241e36';
-      mapContext.lineWidth = 1.5;
+      mapContext.lineWidth = 1.5 * mapScale;
       mapContext.stroke(path);
     }
     const [lon, lat] = worldMarkers[key];
     const x = mapX(lon);
     const y = mapY(lat);
     mapContext.beginPath();
-    mapContext.arc(x, y, 8, 0, Math.PI * 2);
+    mapContext.arc(x, y, 8 * mapScale, 0, Math.PI * 2);
     mapContext.fillStyle = color;
     mapContext.fill();
-    mapContext.lineWidth = 2;
+    mapContext.lineWidth = 2 * mapScale;
     mapContext.strokeStyle = '#241e36';
     mapContext.stroke();
     mapContext.beginPath();
-    mapContext.arc(x, y, 2.4, 0, Math.PI * 2);
+    mapContext.arc(x, y, 2.4 * mapScale, 0, Math.PI * 2);
     mapContext.fillStyle = '#241e36';
     mapContext.fill();
   }
